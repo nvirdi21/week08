@@ -1,6 +1,9 @@
 name: CI/CD Pipeline
 
 on:
+  push:
+    branches:
+      - dev
   pull_request:
     branches:
       - dev
@@ -98,5 +101,3 @@ jobs:
     steps:
       - name: Deploy step
         run: echo "Deploy logic goes here (e.g. kubectl apply, helm upgrade, etc.)"
-
-#
