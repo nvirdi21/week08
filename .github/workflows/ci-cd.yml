@@ -41,14 +41,25 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - name: Locate frontend
+        run: |
+          if [ -d frontend ]; then
+            echo "FRONTEND_PATH=frontend" >> $GITHUB_ENV
+          elif [ -d example_3/frontend ]; then
+            echo "FRONTEND_PATH=example_3/frontend" >> $GITHUB_ENV
+          elif [ -d week08/frontend ]; then
+            echo "FRONTEND_PATH=week08/frontend" >> $GITHUB_ENV
+          else
+            echo "Frontend folder not found!" && exit 1
+          fi
       - name: Install & Build
         run: |
-          npm install --prefix frontend
-          npm run build --prefix frontend
+          npm install --prefix $FRONTEND_PATH
+          npm run build --prefix $FRONTEND_PATH
       - name: Run frontend tests (if exist)
         run: |
-          if [ -f frontend/package.json ] && grep -q "\"test\":" frontend/package.json; then
-            npm test --prefix frontend || echo "No frontend tests defined."
+          if [ -f $FRONTEND_PATH/package.json ] && grep -q "\"test\":" $FRONTEND_PATH/package.json; then
+            npm test --prefix $FRONTEND_PATH || echo "No frontend tests defined."
           else
             echo "No frontend test script found."
           fi
