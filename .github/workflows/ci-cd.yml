@@ -9,6 +9,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: orders
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     strategy:
       matrix:
         service: [backend, frontend]
@@ -17,7 +32,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Backend setup (order_service + product_service)
+      # Backend setup and tests
       - name: Set up Python
         if: matrix.service == 'backend'
         uses: actions/setup-python@v4
@@ -29,10 +44,12 @@ jobs:
         run: |
           cd backend/order_service
           pip install -r requirements.txt
-          pip install pytest
+          pip install pytest psycopg2-binary
 
       - name: Run order_service tests
         if: matrix.service == 'backend'
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/orders
         run: |
           cd backend/order_service
           pytest
@@ -42,15 +59,17 @@ jobs:
         run: |
           cd backend/product_service
           pip install -r requirements.txt
-          pip install pytest
+          pip install pytest psycopg2-binary
 
       - name: Run product_service tests
         if: matrix.service == 'backend'
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/orders
         run: |
           cd backend/product_service
           pytest
 
-      # Frontend: just verify Dockerfile
+      # Frontend build check
       - name: Verify frontend Dockerfile
         if: matrix.service == 'frontend'
         run: |
