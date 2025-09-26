@@ -12,31 +12,48 @@ jobs:
     strategy:
       matrix:
         service: [backend, frontend]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        if: matrix.service == 'frontend'
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
+      # Backend setup
       - name: Set up Python
         if: matrix.service == 'backend'
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Install backend dependencies
+        if: matrix.service == 'backend'
         run: |
-          cd ${{ matrix.service }}
-          npm install || pip install -r requirements.txt
+          cd backend
+          pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Run backend tests
+        if: matrix.service == 'backend'
         run: |
-          cd ${{ matrix.service }}
-          npm test || pytest
+          cd backend
+          pytest
+
+      # Frontend setup
+      - name: Set up Node.js
+        if: matrix.service == 'frontend'
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install frontend dependencies
+        if: matrix.service == 'frontend'
+        run: |
+          cd frontend
+          npm install
+
+      - name: Run frontend tests
+        if: matrix.service == 'frontend'
+        run: |
+          cd frontend
+          npm test
 
   docker-build-push:
     runs-on: ubuntu-latest
@@ -53,8 +70,11 @@ jobs:
 
       - name: Build and push images
         run: |
-          docker build -t sit722nooracr.azurecr.io/${{ github.repository }}:${{ github.sha }} .
-          docker push sit722nooracr.azurecr.io/${{ github.repository }}:${{ github.sha }}
+          docker build -t sit722nooracr.azurecr.io/backend:${{ github.sha }} ./backend
+          docker push sit722nooracr.azurecr.io/backend:${{ github.sha }}
+
+          docker build -t sit722nooracr.azurecr.io/frontend:${{ github.sha }} ./frontend
+          docker push sit722nooracr.azurecr.io/frontend:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -71,4 +91,3 @@ jobs:
           kubectl apply -f k8s/
           kubectl rollout status deployment/order-service-w08e1
           kubectl rollout status deployment/product-service-w08e1
-#
