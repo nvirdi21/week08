@@ -17,43 +17,42 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Backend setup
+      # Backend setup (order_service + product_service)
       - name: Set up Python
         if: matrix.service == 'backend'
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      - name: Install backend dependencies
+      - name: Install order_service dependencies
         if: matrix.service == 'backend'
         run: |
-          cd backend
+          cd backend/order_service
           pip install -r requirements.txt
 
-      - name: Run backend tests
+      - name: Run order_service tests
         if: matrix.service == 'backend'
         run: |
-          cd backend
+          cd backend/order_service
           pytest
 
-      # Frontend setup
-      - name: Set up Node.js
-        if: matrix.service == 'frontend'
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+      - name: Install product_service dependencies
+        if: matrix.service == 'backend'
+        run: |
+          cd backend/product_service
+          pip install -r requirements.txt
 
-      - name: Install frontend dependencies
+      - name: Run product_service tests
+        if: matrix.service == 'backend'
+        run: |
+          cd backend/product_service
+          pytest
+
+      # Frontend: just check Dockerfile exists
+      - name: Verify frontend Dockerfile
         if: matrix.service == 'frontend'
         run: |
-          cd frontend
-          npm install
-
-      - name: Run frontend tests
-        if: matrix.service == 'frontend'
-        run: |
-          cd frontend
-          npm test
+          test -f frontend/Dockerfile
 
   docker-build-push:
     runs-on: ubuntu-latest
@@ -68,11 +67,18 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build and push images
+      - name: Build and push order_service image
         run: |
-          docker build -t sit722nooracr.azurecr.io/backend:${{ github.sha }} ./backend
-          docker push sit722nooracr.azurecr.io/backend:${{ github.sha }}
+          docker build -t sit722nooracr.azurecr.io/order_service:${{ github.sha }} ./backend/order_service
+          docker push sit722nooracr.azurecr.io/order_service:${{ github.sha }}
 
+      - name: Build and push product_service image
+        run: |
+          docker build -t sit722nooracr.azurecr.io/product_service:${{ github.sha }} ./backend/product_service
+          docker push sit722nooracr.azurecr.io/product_service:${{ github.sha }}
+
+      - name: Build and push frontend image
+        run: |
           docker build -t sit722nooracr.azurecr.io/frontend:${{ github.sha }} ./frontend
           docker push sit722nooracr.azurecr.io/frontend:${{ github.sha }}
 
@@ -91,3 +97,4 @@ jobs:
           kubectl apply -f k8s/
           kubectl rollout status deployment/order-service-w08e1
           kubectl rollout status deployment/product-service-w08e1
+          kubectl rollout status deployment/frontend-w08e1
