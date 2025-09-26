@@ -71,3 +71,4 @@ jobs:
           kubectl apply -f k8s/
           kubectl rollout status deployment/order-service-w08e1
           kubectl rollout status deployment/product-service-w08e1
+#
