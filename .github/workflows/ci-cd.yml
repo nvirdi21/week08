@@ -13,6 +13,20 @@ on:
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U testuser -d testdb"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python
@@ -23,10 +37,14 @@ jobs:
         run: |
           pip install -r backend/product_service/requirements.txt
           pip install -r backend/order_service/requirements.txt
-          pip install pytest
+          pip install pytest psycopg2
       - name: Run order_service tests
+        env:
+          DATABASE_URL: postgres://testuser:testpassword@localhost:5432/testdb
         run: pytest backend/order_service
       - name: Run product_service tests
+        env:
+          DATABASE_URL: postgres://testuser:testpassword@localhost:5432/testdb
         run: pytest backend/product_service
 
   frontend-ci:
