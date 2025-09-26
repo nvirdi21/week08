@@ -1,0 +1,25 @@
+name: Simple CI - Week08
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR Login
+        run: az acr login --name sit722nooracr
+
+      - name: Build and push frontend
+        run: |
+          docker build -t sit722nooracr.azurecr.io/frontend:latest ./frontend
+          docker push sit722nooracr.azurecr.io/frontend:latest
