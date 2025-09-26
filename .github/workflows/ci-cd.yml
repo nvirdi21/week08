@@ -23,6 +23,7 @@ jobs:
         run: |
           pip install -r backend/product_service/requirements.txt
           pip install -r backend/order_service/requirements.txt
+          pip install pytest
       - name: Run backend tests
         run: pytest backend/
 
@@ -30,15 +31,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-      - name: Install dependencies
+      - name: Build frontend Docker image
         run: |
-          cd frontend
-          npm install
-          npm run build
+          docker build -t frontend ./frontend
 
   cd:
     needs: [backend-ci, frontend-ci]
