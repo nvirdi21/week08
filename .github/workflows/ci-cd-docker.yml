@@ -21,11 +21,13 @@ jobs:
           python-version: '3.10'
       - name: Install dependencies
         run: |
-          pip install -r backend/product_service/requirements.txt
-          pip install -r backend/order_service/requirements.txt
+          pip install -r week08/backend/product_service/requirements.txt
+          pip install -r week08/backend/order_service/requirements.txt
           pip install pytest
-      - name: Run backend tests
-        run: pytest backend/
+      - name: Run product service tests
+        run: pytest week08/backend/product_service/tests
+      - name: Run order service tests
+        run: pytest week08/backend/order_service/tests
 
   frontend-ci:
     runs-on: ubuntu-latest
@@ -37,7 +39,7 @@ jobs:
           node-version: '16'
       - name: Install dependencies and build
         run: |
-          cd frontend
+          cd week08/frontend
           npm install
           npm run build
 
@@ -54,4 +56,4 @@ jobs:
       - name: Deploy to AKS
         run: |
           az aks get-credentials --resource-group sit722-noor-rg --name sit722nooraks --overwrite-existing
-          kubectl apply -f k8s/
+          kubectl apply -f week08/k8s/
