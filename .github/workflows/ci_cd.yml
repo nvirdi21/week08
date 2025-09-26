@@ -1,0 +1,50 @@
+name: CI/CD Pipeline - Week09
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+  workflow_dispatch:
+
+jobs:
+  # Step 1: Build & push Docker images
+  build_push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - run: az acr login --name ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+
+      - run: |
+          docker build -t ${{ secrets.AZURE_CONTAINER_REGISTRY }}/product_service:latest ./backend/product_service
+          docker build -t ${{ secrets.AZURE_CONTAINER_REGISTRY }}/order_service:latest ./backend/order_service
+          docker build -t ${{ secrets.AZURE_CONTAINER_REGISTRY }}/frontend:latest ./frontend
+
+          docker push ${{ secrets.AZURE_CONTAINER_REGISTRY }}/product_service:latest
+          docker push ${{ secrets.AZURE_CONTAINER_REGISTRY }}/order_service:latest
+          docker push ${{ secrets.AZURE_CONTAINER_REGISTRY }}/frontend:latest
+
+  # Step 2: Deploy to AKS (only when merging into main)
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build_push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - run: |
+          az aks get-credentials \
+            --resource-group sit722-week09-rg \
+            --name sit722week09aks \
+            --overwrite-existing
+
+          kubectl apply -f k8s/
